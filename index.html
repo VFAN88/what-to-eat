@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大理NCC小众点评</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #7CB342 0%, #B4E178 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .decision-card {
+            text-align: center;
+        }
+
+        .restaurant-name {
+            font-size: 2em;
+            color: #7CB342;
+            margin: 20px 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.1s;
+        }
+
+        .restaurant-name.rolling {
+            animation: pulse 0.15s ease-in-out infinite;
+        }
+
+        .restaurant-name.selected {
+            animation: bounce 0.6s ease;
+            color: #7CB342;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        @keyframes bounce {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.3); }
+            50% { transform: scale(0.95); }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #7CB342 0%, #B4E178 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(124, 179, 66, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(124, 179, 66, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.rolling-btn {
+            background: linear-gradient(135deg, #dc2626 0%, #f87171 100%);
+            box-shadow: 0 5px 15px rgba(220, 38, 38, 0.4);
+            animation: btn-pulse 1s ease-in-out infinite;
+        }
+
+        .btn.rolling-btn:hover {
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.6);
+        }
+
+        @keyframes btn-pulse {
+            0%, 100% { box-shadow: 0 5px 15px rgba(220, 38, 38, 0.4); }
+            50% { box-shadow: 0 5px 25px rgba(220, 38, 38, 0.8); }
+        }
+
+        .btn-small {
+            padding: 8px 20px;
+            font-size: 0.9em;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #7CB342 0%, #B4E178 100%);
+            box-shadow: 0 5px 15px rgba(124, 179, 66, 0.4);
+        }
+
+        .restaurant-list {
+            margin-top: 20px;
+        }
+
+        .restaurant-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.2s;
+        }
+
+        .restaurant-item:hover {
+            background: #f5fbe8;
+        }
+
+        .restaurant-item:last-child {
+            border-bottom: none;
+        }
+
+        .restaurant-info {
+            flex: 1;
+        }
+
+        .restaurant-info h3 {
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .restaurant-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.2s;
+        }
+
+        .btn-icon:hover {
+            transform: scale(1.2);
+        }
+
+        .add-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #7CB342;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #a0aec0;
+        }
+
+        .empty-state span {
+            font-size: 3em;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .link-btn {
+            color: #7CB342;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .link-btn:hover {
+            text-decoration: underline;
+        }
+
+        .delete-btn {
+            color: #f56565;
+        }
+
+        .toggle-form {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .quick-search {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5fbe8;
+            border-radius: 8px;
+            font-size: 0.9em;
+            color: #33691E;
+        }
+
+        .quick-search a {
+            color: #7CB342;
+            font-weight: bold;
+        }
+
+        small {
+            color: #718096;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍜 大理NCC小众点评</h1>
+            <p>伟大的应用不是想出来的，是用出来的。</p>
+            <p></p>
+        </div>
+
+        <div class="card decision-card">
+            <div class="restaurant-name" id="result">点击按钮开始选择</div>
+            <button class="btn" id="decideBtn" onclick="toggleRoll()">🎲 帮我决定</button>
+            <div id="open-link" style="margin-top: 15px;"></div>
+        </div>
+
+        <div class="card">
+            <h2 style="color: #2d3748; margin-bottom: 15px;">📋 餐厅列表</h2>
+            <div class="restaurant-list" id="restaurantList"></div>
+            <div class="toggle-form">
+                <button class="btn btn-small btn-secondary" onclick="toggleForm()">+ 添加餐厅</button>
+            </div>
+            <div class="add-form" id="addForm" style="display: none;">
+                <div class="form-group">
+                    <label for="name">餐厅名称</label>
+                    <input type="text" id="name" placeholder="例如：海底捞">
+                </div>
+                <div class="form-group">
+                    <label for="dianpingUrl">大众点评链接（可选）</label>
+                    <input type="url" id="dianpingUrl" placeholder="粘贴餐厅详情页链接">
+                    <small>💡 提示：<a href="https://www.dianping.com/dalishi/ch0" target="_blank" style="color:#7CB342">访问大众点评餐厅页面</a>，复制地址栏链接粘贴到这里</small>
+                </div>
+                <div class="quick-search" id="quickSearch" style="display: none;">
+                    🔍 <a href="https://www.dianping.com/dalishi/ch0" target="_blank">点这里</a> 打开大众点评大理美食页，找到餐厅后复制链接粘贴到上面
+                </div>
+                <button class="btn btn-small" onclick="addRestaurant()">✓ 添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let restaurants = [];
+        let isRolling = false;
+        let rollTimer = null;
+        let rollSpeed = 50; // 初始滚动速度(ms)
+
+        // 初始化默认餐厅
+        const defaultRestaurants = [
+            { name: "麦当劳", dianpingUrl: "" },
+            { name: "肯德基", dianpingUrl: "" },
+            { name: "海底捞", dianpingUrl: "" },
+            { name: "必胜客", dianpingUrl: "" },
+            { name: "星巴克", dianpingUrl: "" }
+        ];
+
+        // 从 localStorage 加载数据
+        function loadRestaurants() {
+            const saved = localStorage.getItem('restaurants');
+            if (saved) {
+                restaurants = JSON.parse(saved);
+            } else {
+                restaurants = defaultRestaurants;
+                saveRestaurants();
+            }
+            renderList();
+        }
+
+        // 保存到 localStorage
+        function saveRestaurants() {
+            localStorage.setItem('restaurants', JSON.stringify(restaurants));
+        }
+
+        // 生成大众点评搜索链接
+        function getDianpingSearchUrl(name) {
+            return `https://www.dianping.com/search/keyword/0_0_${encodeURIComponent(name)}`;
+        }
+
+        // 获取餐厅链接
+        function getDianpingUrl(restaurant) {
+            return restaurant.dianpingUrl || getDianpingSearchUrl(restaurant.name);
+        }
+
+        // 老虎机式滚动选择
+        function toggleRoll() {
+            if (restaurants.length === 0) {
+                alert('请先添加餐厅！');
+                return;
+            }
+
+            const btn = document.getElementById('decideBtn');
+            const result = document.getElementById('result');
+            const openLink = document.getElementById('open-link');
+
+            if (!isRolling) {
+                // 开始滚动
+                isRolling = true;
+                rollSpeed = 50;
+                btn.textContent = '🛑 停！';
+                btn.classList.add('rolling-btn');
+                result.classList.add('rolling');
+                result.classList.remove('selected');
+                openLink.innerHTML = '';
+                roll();
+            } else {
+                // 减速停止
+                isRolling = false;
+                slowDown();
+            }
+        }
+
+        function roll() {
+            if (!isRolling && rollSpeed > 200) return;
+
+            const randomIndex = Math.floor(Math.random() * restaurants.length);
+            document.getElementById('result').textContent = restaurants[randomIndex].name;
+
+            rollTimer = setTimeout(roll, rollSpeed);
+        }
+
+        function slowDown() {
+            const result = document.getElementById('result');
+            const btn = document.getElementById('decideBtn');
+
+            rollSpeed += 30; // 逐步减速
+
+            const randomIndex = Math.floor(Math.random() * restaurants.length);
+            result.textContent = restaurants[randomIndex].name;
+
+            if (rollSpeed > 300) {
+                // 完全停止
+                clearTimeout(rollTimer);
+                btn.textContent = '🎲 帮我决定';
+                btn.classList.remove('rolling-btn');
+                result.classList.remove('rolling');
+                result.classList.add('selected');
+
+                // 找到最终选中的餐厅，显示链接
+                const selected = restaurants.find(r => r.name === result.textContent);
+                if (selected) {
+                    const url = getDianpingUrl(selected);
+                    document.getElementById('open-link').innerHTML = `<a href="${url}" target="_blank" class="link-btn">🔗 在大众点评查看 ${selected.name}</a>`;
+                }
+            } else {
+                rollTimer = setTimeout(slowDown, rollSpeed);
+            }
+        }
+
+        // 渲染餐厅列表
+        function renderList() {
+            const list = document.getElementById('restaurantList');
+            
+            if (restaurants.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <span>🍽️</span>
+                        <p>还没有餐厅，点击"添加餐厅"开始</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = restaurants.map((r, index) => {
+                const url = getDianpingUrl(r);
+                const isDetailPage = r.dianpingUrl && r.dianpingUrl.includes('/shop/');
+                return `
+                <div class="restaurant-item">
+                    <div class="restaurant-info">
+                        <h3>${r.name} ${isDetailPage ? '✅' : '🔍'}</h3>
+                        <a href="${url}" target="_blank" class="link-btn">
+                            ${isDetailPage ? '查看餐厅详情 →' : '在大众点评搜索 →'}
+                        </a>
+                    </div>
+                    <div class="restaurant-actions">
+                        <button class="btn-icon" onclick="window.open('${url}', '_blank')" title="打开大众点评">🔗</button>
+                        <button class="btn-icon delete-btn" onclick="deleteRestaurant(${index})" title="删除">🗑️</button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        // 打开大众点评搜索
+
+        // 添加餐厅
+        function addRestaurant() {
+            const name = document.getElementById('name').value.trim();
+            const dianpingUrl = document.getElementById('dianpingUrl').value.trim();
+
+            if (!name) {
+                alert('请输入餐厅名称！');
+                return;
+            }
+
+            if (dianpingUrl && !dianpingUrl.includes('dianping.com')) {
+                alert('⚠️ 链接似乎不是大众点评的链接，请检查后重试');
+                return;
+            }
+
+            restaurants.push({
+                name: name,
+                dianpingUrl: dianpingUrl || ''
+            });
+
+            saveRestaurants();
+            renderList();
+            
+            document.getElementById('name').value = '';
+            document.getElementById('dianpingUrl').value = '';
+            document.getElementById('quickSearch').style.display = 'none';
+            toggleForm();
+        }
+
+        // 删除餐厅
+        function deleteRestaurant(index) {
+            if (confirm('确定要删除这个餐厅吗？')) {
+                restaurants.splice(index, 1);
+                saveRestaurants();
+                renderList();
+            }
+        }
+
+        // 切换表单显示
+        function toggleForm() {
+            const form = document.getElementById('addForm');
+            form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        // 监听餐厅名称输入
+        document.addEventListener('DOMContentLoaded', () => {
+            const nameInput = document.getElementById('name');
+            const quickSearch = document.getElementById('quickSearch');
+            const searchName = document.getElementById('searchName');
+
+            nameInput.addEventListener('input', (e) => {
+                const name = e.target.value.trim();
+                if (name) {
+                    searchName.textContent = name;
+                    quickSearch.style.display = 'block';
+                } else {
+                    quickSearch.style.display = 'none';
+                }
+            });
+        });
+
+        loadRestaurants();
+    </script>
+</body>
+</html>
