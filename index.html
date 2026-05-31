@@ -279,6 +279,13 @@
             <div class="restaurant-list" id="restaurantList"></div>
             <div class="toggle-form">
                 <button class="btn btn-small btn-secondary" onclick="toggleForm()">+ 添加餐厅</button>
+                <button class="btn btn-small btn-secondary" onclick="exportData()" style="margin-left:8px">📤 导出</button>
+                <button class="btn btn-small btn-secondary" onclick="showImport()" style="margin-left:8px">📥 导入</button>
+            </div>
+            <div id="importArea" style="display:none;margin-top:12px;">
+                <textarea id="importJson" placeholder="粘贴导出的JSON数据" style="width:100%;height:80px;border:2px solid #e2e8f0;border-radius:8px;padding:8px;font-size:0.9em;"></textarea>
+                <button class="btn btn-small" onclick="importData()" style="margin-top:6px;">✓ 导入</button>
+                <button class="btn btn-small btn-secondary" onclick="document.getElementById('importArea').style.display='none'" style="margin-top:6px;margin-left:6px;">取消</button>
             </div>
             <div class="add-form" id="addForm" style="display: none;">
                 <div class="form-group">
@@ -500,6 +507,39 @@
                 }
             });
         });
+
+        // 导出数据
+        function exportData() {
+            const json = JSON.stringify(restaurants, null, 2);
+            navigator.clipboard.writeText(json).then(() => {
+                alert('✅ 数据已复制到剪贴板！\n\n' + json);
+            }).catch(() => {
+                prompt('复制以下数据：', json);
+            });
+        }
+
+        // 显示导入区
+        function showImport() {
+            document.getElementById('importArea').style.display = 'block';
+        }
+
+        // 导入数据
+        function importData() {
+            const json = document.getElementById('importJson').value.trim();
+            if (!json) { alert('请粘贴数据'); return; }
+            try {
+                const data = JSON.parse(json);
+                if (!Array.isArray(data)) throw new Error();
+                restaurants = data;
+                saveRestaurants();
+                renderList();
+                document.getElementById('importArea').style.display = 'none';
+                document.getElementById('importJson').value = '';
+                alert('✅ 导入成功！共 ' + restaurants.length + ' 家餐厅');
+            } catch(e) {
+                alert('❌ 数据格式错误，请检查');
+            }
+        }
 
         loadRestaurants();
     </script>
