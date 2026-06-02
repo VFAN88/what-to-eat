@@ -311,28 +311,58 @@
         let rollTimer = null;
         let rollSpeed = 50; // 初始滚动速度(ms)
 
+        // 默认餐厅列表（云端为空时的兜底数据）
+        const defaultRestaurants = [
+            { name: "振伊园(清真食品一条街店)", dianpingUrl: "https://www.dianping.com/shop/G4600FEIfpHbfvcr" },
+            { name: "淑芳饭店", dianpingUrl: "https://www.dianping.com/shop/k7IgOd5UBzv6Bjna" },
+            { name: "醉琉璃", dianpingUrl: "https://www.dianping.com/shop/l7l9MVJA69Kw8HWE" },
+            { name: "色了木", dianpingUrl: "https://www.dianping.com/shop/k9uAsvmWMubeilSA" },
+            { name: "杨飞烧烤", dianpingUrl: "https://www.dianping.com/shop/H1gyjKCIsNOAKLC7" },
+            { name: "素方舟", dianpingUrl: "https://www.dianping.com/shop/k2W3P0q3gAdVVzoF" },
+            { name: "振华饭店", dianpingUrl: "https://www.dianping.com/shop/H9YnWpFYG4A2DEb9" },
+            { name: "飞香李新疆小吃店", dianpingUrl: "https://www.dianping.com/shop/l5J3bi5P0riuEWEU" },
+            { name: "八宝粥东北春饼", dianpingUrl: "https://www.dianping.com/shop/GaL05a4RnrgALKlR" },
+            { name: "大熊餐吧", dianpingUrl: "https://www.dianping.com/shop/l1pKmIC8hDAqhYak" },
+            { name: "挖色菜香园", dianpingUrl: "https://www.dianping.com/shop/G9lNEXmviFmTSqlz" },
+            { name: "酥虎综合餐厅", dianpingUrl: "https://www.dianping.com/shop/k4C0f9TUIZpYrhnj" },
+            { name: "正宗开远米线", dianpingUrl: "https://www.dianping.com/shop/iLVbyztdbnmJE3W7" },
+            { name: "傣思蜜", dianpingUrl: "https://www.dianping.com/shop/k4cbvdjRGNQ0oCCb" },
+            { name: "平等路烤鱼", dianpingUrl: "https://www.dianping.com/shop/F64bvDaCGIldKn3r" },
+            { name: "小店涮羊肉", dianpingUrl: "https://www.dianping.com/shop/HacXp96TPtGiWNfu" },
+            { name: "gold rose", dianpingUrl: "https://www.dianping.com/shop/H6zau0N5FG4itpVh" },
+            { name: "新民小食堂", dianpingUrl: "https://www.dianping.com/shop/l49HIgtz0QWP846X" },
+            { name: "清宏私厨", dianpingUrl: "https://www.dianping.com/shop/l46gY8LL6GZY4B4J" },
+            { name: "渝小面", dianpingUrl: "https://www.dianping.com/shop/l4gbNBbsohryatkI" }
+        ];
+
         // 云端数据同步 (jsonblob)
-        const BLOB_ID = '019e7c02-f813-7b8f-9829-e484fd4b0595';
+        const BLOB_ID = '019e8697-ce83-7167-bd63-deebb460279a';
         const BLOB_URL = `https://jsonblob.com/api/jsonBlob/${BLOB_ID}`;
         let isSyncing = false;
 
-        // 从云端加载数据
+        // 从云端加载数据，失败则用默认数据
         async function loadRestaurants() {
+            let cloudData = null;
             try {
                 const res = await fetch(BLOB_URL, { headers: { 'Accept': 'application/json' } });
                 if (res.ok) {
-                    restaurants = await res.json();
-                } else {
-                    throw new Error('fetch failed');
+                    cloudData = await res.json();
                 }
-            } catch(e) {
-                // 云端读取失败，用 localStorage 缓存
-                const saved = localStorage.getItem('restaurants');
-                if (saved) {
-                    restaurants = JSON.parse(saved);
-                }
+            } catch(e) {}
+
+            if (Array.isArray(cloudData) && cloudData.length > 0) {
+                // 云端有数据：使用云端
+                restaurants = cloudData;
+            } else {
+                // 云端为空或失败：用默认数据，并初始化云端
+                restaurants = [...defaultRestaurants];
+                saveRestaurants();
             }
+
+            // 无论云端是否成功，也写入本地缓存
+            localStorage.setItem('restaurants', JSON.stringify(restaurants));
             renderList();
+
             // 每 15 秒自动拉取云端更新
             setInterval(pullCloud, 15000);
         }
@@ -344,7 +374,7 @@
                 const res = await fetch(BLOB_URL, { headers: { 'Accept': 'application/json' } });
                 if (res.ok) {
                     const cloudData = await res.json();
-                    if (JSON.stringify(cloudData) !== JSON.stringify(restaurants)) {
+                    if (Array.isArray(cloudData) && cloudData.length > 0 && JSON.stringify(cloudData) !== JSON.stringify(restaurants)) {
                         restaurants = cloudData;
                         localStorage.setItem('restaurants', JSON.stringify(restaurants));
                         renderList();
