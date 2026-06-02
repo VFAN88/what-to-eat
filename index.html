@@ -311,7 +311,7 @@
         let rollTimer = null;
         let rollSpeed = 50; // 初始滚动速度(ms)
 
-        // 默认餐厅列表（云端为空时的兜底数据）
+        // 默认餐厅列表（兜底，永远可用）
         const defaultRestaurants = [
             { name: "振伊园(清真食品一条街店)", dianpingUrl: "https://www.dianping.com/shop/G4600FEIfpHbfvcr" },
             { name: "淑芳饭店", dianpingUrl: "https://www.dianping.com/shop/k7IgOd5UBzv6Bjna" },
@@ -335,47 +335,49 @@
             { name: "渝小面", dianpingUrl: "https://www.dianping.com/shop/l4gbNBbsohryatkI" }
         ];
 
-        // 云端数据同步 (jsonblob)
+        // 云端同步（尽力而为，失败不阻塞）
         const BLOB_ID = '019e8697-ce83-7167-bd63-deebb460279a';
         const BLOB_URL = `https://jsonblob.com/api/jsonBlob/${BLOB_ID}`;
         let isSyncing = false;
 
-        // 从云端加载数据，失败则用默认数据
+        // 从云端拉取，失败则用本地或默认
         async function loadRestaurants() {
+            // 先尝试云端
             let cloudData = null;
             try {
                 const res = await fetch(BLOB_URL, { headers: { 'Accept': 'application/json' } });
                 if (res.ok) {
-                    cloudData = await res.json();
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) cloudData = data;
                 }
             } catch(e) {}
 
-            if (Array.isArray(cloudData) && cloudData.length > 0) {
+            if (cloudData) {
                 // 云端有数据：使用云端
                 restaurants = cloudData;
             } else {
-                // 云端为空或失败：用默认数据，并初始化云端
-                restaurants = [...defaultRestaurants];
-                saveRestaurants();
+                // 云端无数据：用 localStorage 缓存，没有则用默认
+                const saved = localStorage.getItem('restaurants');
+                if (saved) {
+                    try { restaurants = JSON.parse(saved); } catch(e) { restaurants = [...defaultRestaurants]; }
+                } else {
+                    restaurants = [...defaultRestaurants];
+                }
             }
 
-            // 无论云端是否成功，也写入本地缓存
             localStorage.setItem('restaurants', JSON.stringify(restaurants));
             renderList();
-
-            // 每 15 秒自动拉取云端更新
             setInterval(pullCloud, 15000);
         }
 
-        // 拉取云端最新数据
         async function pullCloud() {
             if (isSyncing) return;
             try {
                 const res = await fetch(BLOB_URL, { headers: { 'Accept': 'application/json' } });
                 if (res.ok) {
-                    const cloudData = await res.json();
-                    if (Array.isArray(cloudData) && cloudData.length > 0 && JSON.stringify(cloudData) !== JSON.stringify(restaurants)) {
-                        restaurants = cloudData;
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0 && JSON.stringify(data) !== JSON.stringify(restaurants)) {
+                        restaurants = data;
                         localStorage.setItem('restaurants', JSON.stringify(restaurants));
                         renderList();
                     }
@@ -383,7 +385,6 @@
             } catch(e) {}
         }
 
-        // 保存到云端 + 本地缓存
         async function saveRestaurants() {
             localStorage.setItem('restaurants', JSON.stringify(restaurants));
             isSyncing = true;
@@ -393,9 +394,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(restaurants)
                 });
-            } catch(e) {
-                console.warn('云端同步失败，数据已保存在本地');
-            }
+            } catch(e) {}
             isSyncing = false;
         }
 
